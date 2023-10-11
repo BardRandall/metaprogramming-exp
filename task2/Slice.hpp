@@ -71,21 +71,24 @@ class Slice : private detail::ExtentHolder<extent>, private detail::StrideHolder
   using ExtentHolder = detail::ExtentHolder<extent>;
   using StrideHolder = detail::StrideHolder<stride>;
 
-  template <typename UnderlyingType>
+  template <bool is_const>
   class IteratorImpl {
-  private:
-    UnderlyingType* data_;
-    std::ptrdiff_t stride_;
   public:
     using iterator_category = std::random_access_iterator_tag;
-    using value_type = UnderlyingType;
+    using value_type = std::conditional_t<is_const, const T, T>;
     using difference_type = std::ptrdiff_t;
-    using pointer = UnderlyingType*;
-    using reference = UnderlyingType&;
+    using pointer = value_type*;
+    using reference = value_type&;
+
+  private:
+    pointer data_;
+    std::ptrdiff_t stride_;
+  
+  public:
 
     IteratorImpl() : data_(nullptr), stride_(0) {}
   
-    IteratorImpl(UnderlyingType* data, std::ptrdiff_t stride_) : data_(data), stride_(stride_) {}
+    IteratorImpl(pointer data, std::ptrdiff_t stride_) : data_(data), stride_(stride_) {}
 
     IteratorImpl& operator++() noexcept {
       data_ += stride_;
@@ -125,15 +128,15 @@ class Slice : private detail::ExtentHolder<extent>, private detail::StrideHolder
 
     auto operator<=>(const IteratorImpl& other) const noexcept = default;
     
-    UnderlyingType& operator*() const noexcept {
+    reference operator*() const noexcept {
       return *data_;
     }
 
-    UnderlyingType& operator[](std::size_t pos) const noexcept {
+    reference operator[](std::size_t pos) const noexcept {
       return data_[pos * stride_];
     }
 
-    UnderlyingType* operator->() const noexcept {
+    pointer operator->() const noexcept {
       return data_;
     }
 
@@ -151,21 +154,21 @@ public:
   using const_pointer = const T*;
   using reference = T&;
   using const_reference = const T&;
-  using iterator = IteratorImpl<T>;
-  using const_iterator = IteratorImpl<const T>;
+  using iterator = IteratorImpl<false>;
+  using const_iterator = IteratorImpl<true>;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   // Friends
 
-  template <typename UnderlyingType>
-  friend IteratorImpl<UnderlyingType> operator+(const IteratorImpl<UnderlyingType>&, std::ptrdiff_t);
+  template <bool is_const>
+  friend IteratorImpl<is_const> operator+(const IteratorImpl<is_const>&, std::ptrdiff_t);
 
-  template <typename UnderlyingType>
-  friend typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType> operator+(std::ptrdiff_t n, const typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType>& it);
+  template <bool is_const>
+  friend typename Slice<T, extent, stride>::template IteratorImpl<is_const> operator+(std::ptrdiff_t n, const typename Slice<T, extent, stride>::template IteratorImpl<is_const>& it);
 
-  template <typename UnderlyingType>
-  friend IteratorImpl<UnderlyingType> operator-(const IteratorImpl<UnderlyingType>&, std::ptrdiff_t);
+  template <bool is_const>
+  friend IteratorImpl<is_const> operator-(const IteratorImpl<is_const>&, std::ptrdiff_t);
 
   // Constructors
 
@@ -414,20 +417,20 @@ bool operator==(const Slice<T1, ext1, str1>& s1, const Slice<T2, ext2, str2>& s2
   return true;
 }
 
-template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, typename UnderlyingType>
-typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType> operator+(const typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType>& it, std::ptrdiff_t n) {
+template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, bool is_const>
+typename Slice<T, extent, stride>::template IteratorImpl<is_const> operator+(const typename Slice<T, extent, stride>::template IteratorImpl<is_const>& it, std::ptrdiff_t n) {
   auto copy = it;
   copy += n;
   return copy;
 }
 
-template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, typename UnderlyingType>
-typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType> operator+(std::ptrdiff_t n, const typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType>& it) {
+template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, bool is_const>
+typename Slice<T, extent, stride>::template IteratorImpl<is_const> operator+(std::ptrdiff_t n, const typename Slice<T, extent, stride>::template IteratorImpl<is_const>& it) {
   return it + n;
 }
 
-template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, typename UnderlyingType>
-typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType> operator-(const typename Slice<T, extent, stride>::template IteratorImpl<UnderlyingType>& it, std::ptrdiff_t n) {
+template <class T, std::size_t extent = std::dynamic_extent, std::ptrdiff_t stride = 1, bool is_const>
+typename Slice<T, extent, stride>::template IteratorImpl<is_const> operator-(const typename Slice<T, extent, stride>::template IteratorImpl<is_const>& it, std::ptrdiff_t n) {
   auto copy = it;
   copy -= n;
   return copy;
