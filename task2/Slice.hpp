@@ -1,16 +1,8 @@
-#include <bits/iterator_concepts.h>
-#include <compare>
-#include <cstddef>
-#include <ctime>
-#include <memory>
 #include <span>
 #include <concepts>
 #include <cstdlib>
 #include <array>
 #include <iterator>
-#include <type_traits>
-#include <vector>
-#include <iostream>
 
 inline constexpr std::ptrdiff_t dynamic_stride = -1;
 
