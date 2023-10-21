@@ -1,50 +1,45 @@
+#include <bits/iterator_concepts.h>
+#include <bits/ranges_base.h>
 #include <span>
 #include <concepts>
 #include <cstdlib>
 #include <iterator>
+#include <cassert>
 
 
-template
-  < class T
-  , std::size_t extent = std::dynamic_extent
-  >
-class Span {
-private:
-  template <std::size_t extent_>
-  class SpanStorage {
-      T* data_ = nullptr;
-    public:
-      SpanStorage(T* data, std::size_t) : data_(data) {
+namespace detail {
 
-      }
+  template <std::size_t extent>
+  class ExtentHolder {
+  public:
+    [[gnu::always_inline]] ExtentHolder(std::size_t size) { assert(extent <= size); }
 
-      constexpr std::size_t Size() const {
-        return extent_;
-      }
-
-      T* Data() const {
-        return data_;
-      }
+    constexpr std::size_t GetExtent() const noexcept {
+      return extent;
+    }
   };
 
   template <>
-  class SpanStorage<std::dynamic_extent> {
-      T* data_ = nullptr;
-      std::size_t size_ = 0;
-    public:
-      SpanStorage(T* data, std::size_t size) : data_(data), size_(size) {
+  class ExtentHolder<std::dynamic_extent> {
+    std::size_t extent_;
+  public:
+    [[gnu::always_inline]] ExtentHolder(std::size_t size) : extent_(size) {
 
-      }
+    }
 
-      constexpr std::size_t Size() const {
-        return size_;
-      }
+    [[gnu::always_inline]] std::size_t GetExtent() const noexcept {
+      return extent_;
+    }
 
-      T* Data() const {
-        return data_;
-      }
   };
 
+}  // namespace detail
+
+
+template <typename T, std::size_t extent = std::dynamic_extent>
+class Span : private detail::ExtentHolder<extent> {
+private:
+  using ExtentHolder = detail::ExtentHolder<extent>;
 public:
   using element_type = T;
   using value_type = std::remove_cv_t<T>;
@@ -54,7 +49,7 @@ public:
   using const_pointer = const T*;
   using reference = T&;
   using const_reference = const T&;
-  using iterator = T*;  // TODO?
+  using iterator = T*;
   using const_iterator = const iterator;
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -66,18 +61,24 @@ public:
 
   // Constructors
 
-  Span() 
-  requires (extent == 0 || extent == std::dynamic_extent) {
+  Span() requires (extent == 0 || extent == std::dynamic_extent) 
+    : ExtentHolder(0), data_(nullptr) {
     
   }
 
-  template <class It>
-  Span(It first, size_type count) : storage_(std::to_address(first), count) {
+  template <std::contiguous_iterator It>
+  Span(It first, size_type count) : ExtentHolder(count), data_(std::to_address(first)) {
     
   }
 
-  template <class It, class End>
-  Span(It first, End last) : storage_(std::to_address(first), last - first) {
+  template <std::contiguous_iterator It>
+  Span(It first, It last) : ExtentHolder(last - first), data_(std::to_address(first)) {
+
+  }
+
+  template <std::ranges::contiguous_range Range>
+  explicit(extent != std::dynamic_extent)
+  Span(Range&& range) : ExtentHolder(std::ranges::size(range)), data_(&*std::ranges::begin(range)) {
 
   }
 
@@ -97,14 +98,14 @@ public:
     
   // }
 
-  template <class C>
-  requires requires (C c) {c.begin(); c.end();}
-  Span(C& container) : Span(container.begin(), container.end()) {
+  // template <class C>
+  // requires requires (C c) {c.begin(); c.end();}
+  // Span(C& container) : Span(container.begin(), container.end()) {
     
-  }
+  // }
 
   template <class U, std::size_t N>
-  Span(const std::span<U, N>& source) : storage_(source.Data(), source.Size()) {
+  Span(const std::span<U, N>& span) : ExtentHolder(span.Size()), data_(span.Data()) {
     
   }
 
@@ -123,17 +124,17 @@ public:
   }
 
   reference operator[](size_type index) const {
-    return storage_.Data()[index];
+    return data_[index];
   }
 
   pointer Data() const {
-    return storage_.Data();
+    return data_;
   }
 
   // Observers
 
   constexpr size_type Size() const {
-    return storage_.Size();
+    return ExtentHolder::GetExtent();
   }
 
   constexpr size_type SizeBytes() const {
@@ -177,7 +178,7 @@ public:
   // Iterator methods
 
   iterator begin() const {
-    return storage_.Data();
+    return data_;
   }
 
   const_iterator cbegin() const {
@@ -193,7 +194,7 @@ public:
   }
 
   iterator end() const {
-    return storage_.Data() + storage_.Size();
+    return data_ + Size();
   }
 
   const_iterator cend() const {
@@ -210,9 +211,7 @@ public:
 
 
 private:
-  SpanStorage<extent> storage_;
-  // T* data_ = nullptr;
-  // std::size_t extent_; ?
+  T* data_ = nullptr;
 };
 
 
