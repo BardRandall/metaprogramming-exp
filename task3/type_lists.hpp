@@ -2,6 +2,7 @@
 
 #include <concepts>
 
+#include <csignal>
 #include <type_traits>
 #include <type_tuples.hpp>
 
@@ -73,25 +74,21 @@ struct Repeat {
 };
 
 // Take
-namespace detail {
-    template <std::size_t N, TypeList TL>
-    struct TakeImpl {
-        using Type = Cons<typename TL::Head, typename TakeImpl<N - 1, typename TL::Tail>::Type>;
-    };
-
-    template <TypeList TL>
-    struct TakeImpl<0, TL> {
-        using Type = Nil;
-    };
-
-    template <std::size_t N, Empty TL>
-    struct TakeImpl<N, TL> {
-        using Type = Nil;
-    };
-}
-
 template <std::size_t N, TypeList TL>
-using Take = typename detail::TakeImpl<N, TL>::Type;
+struct Take {
+    using Head = typename TL::Head;
+    using Tail = Take<N - 1, typename TL::Tail>;
+};
+
+template <TypeList TL>
+struct Take<0, TL> : Nil {
+
+};
+
+template <std::size_t N, Empty TL>
+struct Take<N, TL> : Nil {
+
+};
 
 // Drop
 namespace detail {
@@ -298,7 +295,7 @@ struct Zip2<L, R> : Nil {};
 template <Empty L, Empty R>
 struct Zip2<L, R> : Nil {};
 
-// Zip2
+// Zip
 // TODO for finite lists
 template <TypeList... TL>
 struct Zip {
