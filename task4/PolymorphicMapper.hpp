@@ -26,7 +26,7 @@ struct PolymorphicMapper {
       (
         [&object, &result]<class From, Target target>(Mapping<From, target>) {
           try {
-            dynamic_cast<const From&>(object);
+            [[maybe_unused]] auto& unused =  dynamic_cast<const From&>(object);
             result = target;
             throw detail::break_exception();
           } catch(std::bad_cast&) {
