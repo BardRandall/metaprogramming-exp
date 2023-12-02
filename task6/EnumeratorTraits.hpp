@@ -40,7 +40,7 @@ namespace detail {
 
 
 template <class Enum, std::size_t MAXN = 512>
-	// requires std::is_enum_v<Enum>
+	requires std::is_enum_v<Enum>
 struct EnumeratorTraits {
     static constexpr std::size_t size() noexcept {
         return enum_size;
