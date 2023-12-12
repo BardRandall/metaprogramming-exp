@@ -1,10 +1,9 @@
 #pragma once
 
+#include <bits/utility.h>
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
-
-#include "generated.hpp"
 
 template <class...>
 class Annotate {};
