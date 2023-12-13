@@ -82,28 +82,6 @@ public:
 
   }
 
-  // template <std::size_t N>
-  // requires (extent == N || extent == std::dynamic_extent)
-  // Span(std::type_identity_t<element_type> (&arr)[N]) : storage(std::data(arr), N) {
-
-  // }
-
-  // template <class U, std::size_t N>
-  // Span(std::array<U, N>& arr) : storage(std::data(arr), N) {
-
-  // }
-
-  // template <class U, std::size_t N>
-  // Span(const std::array<U, N>& arr) : storage(std::data(arr), N) {
-    
-  // }
-
-  // template <class C>
-  // requires requires (C c) {c.begin(); c.end();}
-  // Span(C& container) : Span(container.begin(), container.end()) {
-    
-  // }
-
   template <class U, std::size_t N>
   Span(const std::span<U, N>& span) : ExtentHolder(span.Size()), data_(span.Data()) {
     
@@ -165,16 +143,6 @@ public:
     return Span<T, std::dynamic_extent>(Data() + Size() - Count, Count);
   }
 
-  // template <std::size_t Offset, std::size_t Count = std::dynamic_extent >
-  // std::span<T, E /* see below */> Subspan() const {
-
-  // }
-
-  // template <std::size_t Offset>
-  // std::span<T, std::dynamic_extent> Subspan(size_type Offset, size_type Count = std::dynamic_extent) const {
-
-  // }
-
   // Iterator methods
 
   iterator begin() const {
@@ -186,11 +154,11 @@ public:
   }
 
   reverse_iterator rbegin() const {
-    std::make_reverse_iterator(begin());
+    std::make_reverse_iterator(end());
   }
 
   const_reverse_iterator crbegin() const {
-    return std::make_reverse_iterator(cbegin());
+    return std::make_reverse_iterator(cend());
   }
 
   iterator end() const {
@@ -202,11 +170,11 @@ public:
   }
 
   reverse_iterator rend() const {
-    std::make_reverse_iterator(end());
+    std::make_reverse_iterator(begin());
   }
 
   const_reverse_iterator crend() const {
-    return std::make_reverse_iterator(cend());
+    return std::make_reverse_iterator(cbegin());
   }
 
 
